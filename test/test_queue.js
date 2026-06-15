@@ -108,4 +108,28 @@ describe('Queue', function () {
             });
         });
     });
+
+    describe('claimNextJob', function () {
+        it('claims higher priority job before change stream job', function (done) {
+            var lowPriorityDoc;
+
+            queue.enqueue('foo', { label: 'low' }, { priority: 1 }, function (err, lowJob) {
+                if (err) return done(err);
+
+                lowPriorityDoc = lowJob.data;
+
+                queue.enqueue('foo', { label: 'high' }, { priority: 10 }, function (err) {
+                    if (err) return done(err);
+
+                    queue.claimNextJob({}, lowPriorityDoc, function (err, job) {
+                        if (err) return done(err);
+
+                        assert.ok(job);
+                        assert.equal(job.data.params.label, 'high');
+                        done();
+                    });
+                });
+            });
+        });
+    });
 });
